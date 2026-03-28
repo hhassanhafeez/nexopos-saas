@@ -2,6 +2,7 @@
 
 namespace App\Jobs;
 
+use App\Models\PaymentType;
 use App\Services\SetupService;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
@@ -50,6 +51,24 @@ class ProvisionNexoPOSTenant implements ShouldQueue
             ];
             foreach ($currencyOptions as $key => $value) {
                 ns()->option->set($key, $value);
+            }
+
+            // Add Pakistani mobile wallet payment types
+            $adminUser = \App\Models\User::first();
+            $mobilePaments = [
+                ['label' => 'JazzCash',  'identifier' => 'jazzcash-payment'],
+                ['label' => 'Easypaisa', 'identifier' => 'easypaisa-payment'],
+            ];
+            foreach ($mobilePaments as $type) {
+                if (!PaymentType::where('identifier', $type['identifier'])->exists()) {
+                    $pt = new PaymentType;
+                    $pt->label      = $type['label'];
+                    $pt->identifier = $type['identifier'];
+                    $pt->readonly   = false;
+                    $pt->author_id  = $adminUser->id;
+                    $pt->active     = true;
+                    $pt->save();
+                }
             }
 
             // Clear sensitive provisioning data
