@@ -1,93 +1,46 @@
 <?php
 
-use App\Classes\FormInput;
-use App\Classes\Wizard;
-use App\Events\BeforeStartWebRouteEvent;
+use App\Http\Controllers\SuperAdmin\AuthController;
+use App\Http\Controllers\SuperAdmin\TenantController;
 use App\Http\Controllers\DevController;
 use App\Services\WizardService;
 use Illuminate\Support\Facades\Route;
 
 /*
 |--------------------------------------------------------------------------
-| Web Routes
+| Central Web Routes (Super Admin)
 |--------------------------------------------------------------------------
 |
-| Here is where you can register web routes for your application. These
-| routes are loaded by the RouteServiceProvider within a group which
-| contains the "web" middleware group. Now create something great!
+| These routes are only accessible from the central domain (localhost).
+| Tenant subdomains are handled in routes/tenant.php.
 |
 */
 
-$domain = pathinfo( env( 'APP_URL' ) );
+Route::prefix('super-admin')->name('super-admin.')->group(function () {
+    // Auth
+    Route::get('login', [AuthController::class, 'showLogin'])->name('login');
+    Route::post('login', [AuthController::class, 'login'])->name('login.post');
+    Route::post('logout', [AuthController::class, 'logout'])->name('logout');
 
-/**
- * If something has to happen
- * before the web routes are saved
- * this will be performmed here.
- */
-BeforeStartWebRouteEvent::dispatch();
+    // Tenant management (protected)
+    Route::middleware('super-admin.auth')->group(function () {
+        Route::get('/', [TenantController::class, 'index'])->name('dashboard');
+        Route::get('tenants/create', [TenantController::class, 'create'])->name('tenants.create');
+        Route::post('tenants', [TenantController::class, 'store'])->name('tenants.store');
+        Route::delete('tenants/{tenant}', [TenantController::class, 'destroy'])->name('tenants.destroy');
+    });
+});
 
-/**
- * By default, wildcard is disabled
- * on the system. In order to enable it, the user
- * will have to follow these instructions https://my.nexopos.com/en/documentation/wildcards
- */
-if ( env( 'NS_WILDCARD_ENABLED' ) ) {
-    /**
-     * The defined route should only be applicable
-     * to the main domain.
-     */
-    $domainString = ( $domain[ 'filename' ] ?: 'localhost' ) . ( isset( $domain[ 'extension' ] ) ? '.' . $domain[ 'extension' ] : '' );
+// Redirect root to super-admin
+Route::get('/', fn() => redirect('/super-admin'));
 
-    Route::domain( $domainString )->group( function () {
-        include dirname( __FILE__ ) . DIRECTORY_SEPARATOR . 'web-base.php';
-    } );
-} else {
-    include dirname( __FILE__ ) . DIRECTORY_SEPARATOR . 'web-base.php';
-}
-
-if ( env( 'APP_DEBUG' ) ) {
-    /**
-     * This is made to redirect to
-     * vue server. For some reason we're unable to
-     * configure that correctly on vite.config.js
-     */
-    Route::get( '__vite_ping', function () {
-        $filePath = base_path( 'public/hot' );
-
-        if ( file_exists( $filePath ) ) {
-            return redirect( file_get_contents( $filePath ) . '/__vite_ping' );
+if (env('APP_DEBUG')) {
+    Route::get('__vite_ping', function () {
+        $filePath = base_path('public/hot');
+        if (file_exists($filePath)) {
+            return redirect(file_get_contents($filePath) . '/__vite_ping');
         }
-    } );
+    });
 
-    /**
-     * For local Vue 3 components development
-     * those routes are registered.
-     */
-    Route::get( '__dev__', [ DevController::class, 'index' ] );
-
-    include dirname( __FILE__ ) . '/debug.php';
+    Route::get('__dev__', [DevController::class, 'index']);
 }
-
-Route::get( 'wizard', function () {
-    $wizard = new WizardService(
-        title: 'Example',
-        description: 'This is an example of how to use the wizard service',
-        steps: Wizard::steps(
-            Wizard::step(
-                completed: false,
-                title: 'Configuration',
-                description: 'Configure your application',
-                fields: Wizard::fields(
-                    FormInput::text(
-                        label: 'Name',
-                        name: 'name',
-                        value: 'NexoPOS'
-                    )
-                )
-            )
-        )
-    );
-
-    return $wizard->render();
-} );

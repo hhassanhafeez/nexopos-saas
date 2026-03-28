@@ -16,12 +16,13 @@ export default ({ mode }) => {
         base: './',
         server: {
             port: 3331,
-            host: '127.0.0.1',
+            host: process.env.VITE_DOCKER ? '0.0.0.0' : '127.0.0.1',
             hmr: {
-                protocol: 'wss',
+                protocol: process.env.VITE_DOCKER ? 'ws' : 'wss',
                 host: 'localhost',
+                port: 3331,
             },
-            https: true,
+            https: !process.env.VITE_DOCKER,
         },
         resolve: {
             alias: [

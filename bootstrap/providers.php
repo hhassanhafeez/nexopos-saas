@@ -13,4 +13,5 @@ return [
     App\Providers\SettingsPageProvider::class,
     App\Providers\TelescopeServiceProvider::class,
     App\Providers\WidgetsServiceProvider::class,
+    App\Providers\TenancyServiceProvider::class,
 ];

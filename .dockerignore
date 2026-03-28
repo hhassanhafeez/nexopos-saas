@@ -1,0 +1,16 @@
+node_modules
+.git
+.env
+.env.*
+!.env.example
+vendor
+storage/logs/*
+storage/framework/cache/*
+storage/framework/sessions/*
+storage/framework/views/*
+public/build
+public/hot
+*.log
+.DS_Store
+Thumbs.db
+docker-compose.prod.yml
